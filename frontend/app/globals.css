@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+/*
+  Dark-first theme (spec section 29). We deliberately don't offer a light-mode
+  toggle for v1 — every color below is tuned for the dark background.
+*/
+:root {
+  --background: #0b0d12;
+  --surface: #14171f;
+  --surface-raised: #1b1f2a;
+  --border: #262b38;
+  --foreground: #e8e9ed;
+  --foreground-muted: #9599a6;
+  --accent: #e0304a;      /* a cinematic red, used sparingly for primary actions */
+  --accent-hover: #c9273f;
+  --accent-soft: rgba(224, 48, 74, 0.14);
+  --success: #35c073;
+  --warning: #e0a530;
+  --danger: #e0304a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-fraunces);
+  --font-mono: var(--font-plex-mono);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+* {
+  border-color: var(--border);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-raised);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border);
+}
+
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-raised) 37%, var(--surface) 63%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-toast-in {
+  animation: toast-in 0.18s ease-out;
+}
+
+/*
+  Signature motif: a thin strip of perforations echoing the sprocket holes
+  along the edge of 35mm film stock. Used once, sparingly, as the divider
+  between the sidebar's primary nav and its account section — not repeated
+  elsewhere in the UI.
+*/
+.sprocket-rail {
+  height: 1px;
+  background-image: radial-gradient(circle, var(--border) 1.5px, transparent 1.5px);
+  background-size: 10px 1px;
+  background-repeat: repeat-x;
+  background-position: left center;
+  opacity: 0.9;
+}
+
+/*
+  Shared focus ring for icon-only buttons (favorite/watched toggles, drawer
+  open/close, etc.) that don't go through the Button component. Keyboard
+  users need a visible focus indicator on every interactive element.
+*/
+.icon-btn-focus {
+  outline: none;
+}
+.icon-btn-focus:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
