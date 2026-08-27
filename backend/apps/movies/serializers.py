@@ -32,6 +32,7 @@ class MovieListSerializer(serializers.ModelSerializer):
     director = PersonSerializer(read_only=True)
     release_year = serializers.IntegerField(read_only=True)
 
+    video_url = serializers.SerializerMethodField()
     # Per-request-user convenience flags, populated via SerializerMethodField so the
     # frontend can render favorite/watchlist/watched state without extra API calls.
     is_favorited = serializers.SerializerMethodField()
@@ -41,10 +42,21 @@ class MovieListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
         fields = [
-            'id', 'title', 'poster_url', 'backdrop_url', 'release_date', 'release_year',
-            'runtime_minutes', 'rating', 'genres', 'director',
-            'is_favorited', 'is_in_watchlist', 'is_watched',
-        ]
+    'id',
+    'title',
+    'poster_url',
+    'backdrop_url',
+    'video_url',
+    'release_date',
+    'release_year',
+    'runtime_minutes',
+    'rating',
+    'genres',
+    'director',
+    'is_favorited',
+    'is_in_watchlist',
+    'is_watched',
+    ]
 
     def _user(self):
         request = self.context.get('request')
@@ -73,6 +85,18 @@ class MovieListSerializer(serializers.ModelSerializer):
         ids = self.context.get('watched_movie_ids')
         return obj.id in ids if ids is not None else obj.watched_by.filter(user=user).exists()
 
+    def get_video_url(self, obj):
+        request = self.context.get('request')
+
+        if not obj.video_file:
+            return None
+
+        url = obj.video_file.url
+
+        if request:
+            return request.build_absolute_uri(url)
+
+        return url
 
 class MovieDetailSerializer(MovieListSerializer):
     """Full representation for the movie detail page — includes description, cast, and the
@@ -107,6 +131,15 @@ class MovieWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
         fields = [
-            'id', 'title', 'description', 'release_date', 'poster_url', 'backdrop_url',
-            'runtime_minutes', 'rating', 'genre_ids', 'director_id',
-        ]
+    'id',
+    'title',
+    'description',
+    'release_date',
+    'poster_url',
+    'backdrop_url',
+    'video_file',
+    'runtime_minutes',
+    'rating',
+    'genre_ids',
+    'director_id',
+]

@@ -1,6 +1,6 @@
 from django.db.models import Prefetch
 from rest_framework import generics, permissions
-
+from rest_framework.parsers import MultiPartParser, FormParser
 from apps.library.models import Favorite, WatchedEntry, WatchlistEntry
 
 from .filters import MovieFilter
@@ -15,6 +15,7 @@ class MovieListCreateView(generics.ListCreateAPIView):
     POST /api/movies/  — create a movie. Staff only.
     """
     permission_classes = [IsStaffOrReadOnly]
+    parser_classes = [MultiPartParser, FormParser]
     filterset_class = MovieFilter
     search_fields = ['title', 'description', 'director__name', 'cast__name']
     ordering_fields = ['title', 'release_date', 'rating', 'created_at']
