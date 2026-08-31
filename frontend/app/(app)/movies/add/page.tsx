@@ -72,7 +72,7 @@ export default function AddMoviePage() {
     try {
       await moviesApi.create(formData);
 
-      router.push('/my-movies');
+      router.push('/movies/my');
       router.refresh();
     } catch (err) {
       if (err instanceof ApiRequestError) {
@@ -102,7 +102,7 @@ export default function AddMoviePage() {
       <div className="mx-auto max-w-2xl">
         <div className="mb-8">
           <Link
-            href="/my-movies"
+            href="/movies/my"
             className="text-sm text-foreground-muted hover:text-foreground"
           >
             ← Back to My Movies

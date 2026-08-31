@@ -3,12 +3,19 @@ from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 class MoviePermission(BasePermission):
     """
-    Movie permissions:
+    Permissions for movies.
 
-    - Anyone can perform safe/read-only requests.
-    - Authenticated users can create movies.
-    - Only the owner of a movie can update/delete it.
-    - Staff users can manage any movie.
+    GET:
+        - Anyone can view catalog movies.
+        - Anyone can view public uploaded movies.
+        - Authenticated users can view their own private movies.
+
+    POST:
+        - Any authenticated user can create/upload a movie.
+
+    PUT/PATCH/DELETE:
+        - Only the owner of an uploaded movie can modify/delete it.
+        - Catalog/TMDB movies (owner=None) cannot be modified/deleted by users.
     """
 
     def has_permission(self, request, view):
@@ -23,13 +30,14 @@ class MoviePermission(BasePermission):
         )
 
     def has_object_permission(self, request, view, obj):
-        # Anyone can view a movie that the view allows them to see.
+        # Reading:
+        # queryset filtering in views.py already controls which movies
+        # are visible. If the object reached this point, allow reading.
         if request.method in SAFE_METHODS:
             return True
 
-        # Staff can manage any movie.
-        if request.user.is_staff:
-            return True
+        # Only the owner can modify/delete their uploaded movie.
+        if obj.owner is None:
+            return False
 
-        # Normal users can only modify/delete their own movies.
-        return obj.owner_id == request.user.id
+        return obj.owner == request.user

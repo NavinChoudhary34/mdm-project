@@ -31,22 +31,37 @@ export interface Movie {
   id: number;
   title: string;
   description?: string;
+
   poster_url: string;
   backdrop_url: string;
-  video_url: string | null;
+
+  video_file?: string | null;
+
   release_date: string | null;
   release_year: number | null;
   runtime_minutes: number | null;
   rating: string | null;
+
   genres: Genre[];
   director: Person | null;
+
   is_favorited: boolean;
   is_in_watchlist: boolean;
   is_watched: boolean;
+
   cast_members?: CastMember[];
-  my_rating?: { score: number; review: string } | null;
+
+  my_rating?: {
+    score: number;
+    review: string;
+  } | null;
+
   created_at?: string;
   updated_at?: string;
+
+  owner_id?: number | null;
+  owner_username?: string;
+  visibility?: 'public' | 'private';
 }
 
 export interface PlaylistMovieEntry {
