@@ -51,11 +51,18 @@ export interface MovieFilters {
 
 export const moviesApi = {
   list: (filters: MovieFilters = {}) =>
-    api.get<Paginated<Movie>>(`/movies/${buildQuery(filters as Record<string, string | number>)}`),
+    api.get<Paginated<Movie>>(
+      `/movies/${buildQuery(filters as Record<string, string | number>)}`
+    ),
 
-  detail: (id: number) => api.get<Movie>(`/movies/${id}/`),
+  detail: (id: number) =>
+    api.get<Movie>(`/movies/${id}/`),
 
-  genres: () => api.get<Genre[]>('/movies/genres/'),
+  genres: () =>
+    api.get<Genre[]>('/movies/genres/'),
+
+  create: (data: FormData) =>
+    api.post<Movie>('/movies/', data),
 };
 
 // --- Playlists ---

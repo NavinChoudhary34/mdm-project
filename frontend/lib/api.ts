@@ -62,12 +62,18 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     ...(headers as Record<string, string>),
   };
 
-  let finalBody: BodyInit | undefined;
-  if (body !== undefined) {
+let finalBody: BodyInit | undefined;
+
+if (body !== undefined) {
+  if (body instanceof FormData) {
+    // For file uploads, let the browser set Content-Type
+    // including the multipart boundary.
+    finalBody = body;
+  } else {
     finalHeaders['Content-Type'] = 'application/json';
     finalBody = JSON.stringify(body);
   }
-
+}
   if (!skipAuth) {
     const token = getAccessToken();
     if (token) finalHeaders['Authorization'] = `Bearer ${token}`;

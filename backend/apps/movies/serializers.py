@@ -39,24 +39,40 @@ class MovieListSerializer(serializers.ModelSerializer):
     is_in_watchlist = serializers.SerializerMethodField()
     is_watched = serializers.SerializerMethodField()
 
+    owner = serializers.IntegerField(
+    source='owner_id',
+    read_only=True,
+    allow_null=True,
+    )
+
+    video_file = serializers.FileField(
+    read_only=True
+    )
+
+    visibility = serializers.CharField(
+    read_only=True
+    )
     class Meta:
         model = Movie
         fields = [
     'id',
+    'owner',
     'title',
+    'description',
     'poster_url',
     'backdrop_url',
-    'video_url',
     'release_date',
     'release_year',
     'runtime_minutes',
     'rating',
     'genres',
     'director',
+    'video_file',
+    'visibility',
     'is_favorited',
     'is_in_watchlist',
     'is_watched',
-    ]
+]
 
     def _user(self):
         request = self.context.get('request')
@@ -120,26 +136,55 @@ class MovieDetailSerializer(MovieListSerializer):
 
 
 class MovieWriteSerializer(serializers.ModelSerializer):
-    """Used by admin/staff to create or update movies (see apps.movies.permissions)."""
+    """
+    Used by authenticated users to create/update their own movies.
+    The owner is assigned automatically by the view.
+    """
+
     genre_ids = serializers.PrimaryKeyRelatedField(
-        source='genres', queryset=Genre.objects.all(), many=True, required=False
+        source='genres',
+        queryset=Genre.objects.all(),
+        many=True,
+        required=False,
     )
+
     director_id = serializers.PrimaryKeyRelatedField(
-        source='director', queryset=Person.objects.all(), required=False, allow_null=True
+        source='director',
+        queryset=Person.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+
+    owner = serializers.PrimaryKeyRelatedField(
+        read_only=True
+    )
+
+    video_file = serializers.FileField(
+        required=False,
+        allow_null=True,
+    )
+
+    visibility = serializers.ChoiceField(
+        choices=Movie.VISIBILITY_CHOICES,
+        required=False,
+        default=Movie.VISIBILITY_PRIVATE,
     )
 
     class Meta:
         model = Movie
         fields = [
-    'id',
-    'title',
-    'description',
-    'release_date',
-    'poster_url',
-    'backdrop_url',
-    'video_file',
-    'runtime_minutes',
-    'rating',
-    'genre_ids',
-    'director_id',
-]
+            'id',
+            'owner',
+            'title',
+            'description',
+            'release_date',
+            'poster_url',
+            'backdrop_url',
+            'runtime_minutes',
+            'rating',
+            'genre_ids',
+            'director_id',
+            'video_file',
+            'visibility',
+        ]
+        read_only_fields = ['id', 'owner']

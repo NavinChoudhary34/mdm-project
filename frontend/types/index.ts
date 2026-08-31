@@ -5,6 +5,7 @@ export interface User {
   bio: string;
   avatar_url: string;
   date_joined: string;
+  is_staff: boolean;
 }
 
 export interface Genre {
@@ -32,6 +33,7 @@ export interface Movie {
   description?: string;
   poster_url: string;
   backdrop_url: string;
+  video_url: string | null;
   release_date: string | null;
   release_year: number | null;
   runtime_minutes: number | null;

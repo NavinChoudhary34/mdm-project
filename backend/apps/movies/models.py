@@ -25,34 +25,73 @@ class Person(models.Model):
 
 
 class Movie(models.Model):
+    VISIBILITY_PRIVATE = 'private'
+    VISIBILITY_PUBLIC = 'public'
+
+    VISIBILITY_CHOICES = [
+        (VISIBILITY_PRIVATE, 'Private'),
+        (VISIBILITY_PUBLIC, 'Public'),
+    ]
+
     title = models.CharField(max_length=255, db_index=True)
     description = models.TextField(blank=True, default='')
-    release_date = models.DateField(db_index=True, null=True, blank=True)
 
-    # Movie artwork
+    # Owner of a user-uploaded movie.
+    # NULL means this is a shared/catalog movie, such as a TMDB movie.
+    owner = models.ForeignKey(
+        'accounts.User',
+        related_name='uploaded_movies',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+
+    # Actual uploaded movie/video file.
+    video_file = models.FileField(
+        upload_to='movies/videos/',
+        null=True,
+        blank=True,
+    )
+
+    # Controls whether other users can view this uploaded movie.
+    visibility = models.CharField(
+        max_length=10,
+        choices=VISIBILITY_CHOICES,
+        default=VISIBILITY_PRIVATE,
+    )
+
+    release_date = models.DateField(db_index=True, null=True, blank=True)
     poster_url = models.URLField(blank=True, default='')
     backdrop_url = models.URLField(blank=True, default='')
-
-    # Actual movie/video file
-    video_file = models.FileField(
-        upload_to='movies/',
-        blank=True,
-        null=True
-    )
-
     runtime_minutes = models.PositiveIntegerField(null=True, blank=True)
 
-    genres = models.ManyToManyField(Genre, related_name='movies', blank=True)
-
-    # genres = models.ManyToManyField(Genre, related_name='movies', blank=True)
-    director = models.ForeignKey(
-        Person, related_name='directed_movies', on_delete=models.SET_NULL, null=True, blank=True
+    genres = models.ManyToManyField(
+        Genre,
+        related_name='movies',
+        blank=True
     )
-    cast = models.ManyToManyField(Person, through='MovieCastMember', related_name='acted_in_movies', blank=True)
 
-    # Aggregate/critical rating (e.g. imported from an external source), distinct
-    # from any individual user's personal rating stored in apps.library.Rating.
-    rating = models.DecimalField(max_digits=3, decimal_places=1, null=True, blank=True)
+    director = models.ForeignKey(
+        Person,
+        related_name='directed_movies',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    cast = models.ManyToManyField(
+        Person,
+        through='MovieCastMember',
+        related_name='acted_in_movies',
+        blank=True
+    )
+
+    rating = models.DecimalField(
+        max_digits=3,
+        decimal_places=1,
+        null=True,
+        blank=True
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -62,6 +101,7 @@ class Movie(models.Model):
         indexes = [
             models.Index(fields=['title']),
             models.Index(fields=['release_date']),
+            models.Index(fields=['owner']),
         ]
 
     def __str__(self):
