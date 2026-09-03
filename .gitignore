@@ -25,3 +25,7 @@ build/
 .idea/
 .DS_Store
 Thumbs.db
+
+
+# non funt=ctional files
+"C:\mdm\apply_poster_video_changes.py"
