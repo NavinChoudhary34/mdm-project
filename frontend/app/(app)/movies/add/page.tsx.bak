@@ -17,7 +17,6 @@ export default function AddMoviePage() {
   const [runtime, setRuntime] = useState('');
   const [rating, setRating] = useState('');
   const [posterUrl, setPosterUrl] = useState('');
-  const [posterImage, setPosterImage] = useState<File | null>(null);
   const [backdropUrl, setBackdropUrl] = useState('');
   const [visibility, setVisibility] = useState<'public' | 'private'>('private');
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -58,11 +57,7 @@ export default function AddMoviePage() {
       formData.append('rating', rating);
     }
 
-    // An uploaded poster image takes priority over a pasted URL (enforced
-    // on the backend too), so only send the URL when there's no file.
-    if (posterImage) {
-      formData.append('poster_image', posterImage);
-    } else if (posterUrl) {
+    if (posterUrl) {
       formData.append('poster_url', posterUrl);
     }
 
@@ -172,34 +167,12 @@ export default function AddMoviePage() {
             onChange={(e) => setRating(e.target.value)}
           />
 
-          <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">
-              Poster image
-            </label>
-
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                setPosterImage(e.target.files?.[0] ?? null);
-              }}
-              className="block w-full rounded-lg border border-border bg-background p-3 text-sm text-foreground"
-            />
-
-            {posterImage && (
-              <p className="mt-2 text-xs text-foreground-muted">
-                Selected: {posterImage.name}
-              </p>
-            )}
-          </div>
-
           <Input
             label="Poster URL"
             type="url"
             value={posterUrl}
             onChange={(e) => setPosterUrl(e.target.value)}
-            placeholder="https://... (ignored if you upload an image above)"
-            disabled={!!posterImage}
+            placeholder="https://..."
           />
 
           <Input

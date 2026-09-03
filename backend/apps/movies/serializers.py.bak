@@ -64,17 +64,6 @@ class MovieListSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
-    # If the user uploaded a poster image, serve that. Otherwise fall back
-    # to the plain poster_url (e.g. a catalog/TMDB image link).
-    poster_url = serializers.SerializerMethodField()
-
-    def get_poster_url(self, obj):
-        if obj.poster_image:
-            request = self.context.get('request')
-            url = obj.poster_image.url
-            return request.build_absolute_uri(url) if request else url
-        return obj.poster_url or ''
-
     # Information about the user who uploaded the movie.
     owner_id = serializers.IntegerField(
         source='owner.id',
@@ -264,11 +253,6 @@ class MovieWriteSerializer(serializers.ModelSerializer):
         allow_null=True
     )
 
-    poster_image = serializers.ImageField(
-        required=False,
-        allow_null=True
-    )
-
     visibility = serializers.ChoiceField(
         choices=Movie.VISIBILITY_CHOICES,
         required=False,
@@ -284,7 +268,6 @@ class MovieWriteSerializer(serializers.ModelSerializer):
             'description',
             'release_date',
             'poster_url',
-            'poster_image',
             'backdrop_url',
             'runtime_minutes',
             'rating',

@@ -15,6 +15,12 @@ export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
+  // Pick the longest href that matches the current path, so nested routes
+  // (e.g. /movies/my) don't also mark their parent (/movies) as active.
+  const activeHref = primaryNavItems
+    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
   return (
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-border lg:bg-surface">
       <div className="flex h-16 items-center gap-2 px-6">
@@ -25,7 +31,10 @@ export function Sidebar() {
 
       <nav aria-label="Primary" className="flex flex-1 flex-col gap-1 px-3">
         {primaryNavItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          // Only the most specific matching href is active, so a parent route
+          // (e.g. /movies) doesn't also light up alongside a nested one that's
+          // currently open (e.g. /movies/my).
+          const isActive = item.href === activeHref;
           const Icon = item.icon;
           return (
             <Link

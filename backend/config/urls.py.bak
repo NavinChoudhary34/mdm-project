@@ -1,10 +1,10 @@
 from django.contrib import admin
 from django.conf import settings
-from django.urls import include, path, re_path
+from django.conf.urls.static import static
+from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from apps.playlists import urls as playlists_urls
-from config.media_serving import serve_media
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -21,13 +21,4 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
-    # Range-aware media serving (not Django's default static.serve, which
-    # ignores Range headers entirely and breaks video seeking) - see
-    # config/media_serving.py for why.
-    urlpatterns += [
-        re_path(
-            r'^%s(?P<path>.*)$' % settings.MEDIA_URL.lstrip('/'),
-            serve_media,
-            {'document_root': settings.MEDIA_ROOT},
-        ),
-    ]
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

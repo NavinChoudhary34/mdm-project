@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/Button';
 import { StarRating } from '@/components/ui/StarRating';
 import { Textarea } from '@/components/ui/Input';
 import { AddToPlaylistModal } from '@/components/playlists/AddToPlaylistModal';
-import { VideoPlayer } from '@/components/movies/VideoPlayer';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function MovieDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -159,11 +158,16 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* Player (for a movie you uploaded yourself) or backdrop */}
       {movie.video_file ? (
-        <VideoPlayer
-          src={movie.video_file}
-          poster={movie.poster_url || undefined}
-          className="mt-4 w-full"
-        />
+        <div className="mt-4 aspect-video w-full overflow-hidden rounded-xl bg-black">
+          <video
+            controls
+            className="h-full w-full"
+            poster={movie.poster_url || undefined}
+            src={movie.video_file}
+          >
+            Your browser doesn&apos;t support video playback.
+          </video>
+        </div>
       ) : (
         <div className="relative mt-4 aspect-[21/9] w-full overflow-hidden rounded-xl bg-surface">
           {movie.backdrop_url ? (

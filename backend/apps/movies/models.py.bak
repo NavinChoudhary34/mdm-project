@@ -62,13 +62,6 @@ class Movie(models.Model):
 
     release_date = models.DateField(db_index=True, null=True, blank=True)
     poster_url = models.URLField(blank=True, default='')
-    # Uploaded poster image (for user-uploaded movies). Takes priority over
-    # poster_url when both are set — see MovieListSerializer.get_poster_url.
-    poster_image = models.ImageField(
-        upload_to='movies/posters/',
-        null=True,
-        blank=True,
-    )
     backdrop_url = models.URLField(blank=True, default='')
     runtime_minutes = models.PositiveIntegerField(null=True, blank=True)
 
