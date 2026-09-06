@@ -28,4 +28,7 @@ Thumbs.db
 
 
 # non funt=ctional files
-"C:\mdm\apply_poster_video_changes.py"
+apply_poster_video_changes.py
+apply_video_player_changes.py
+apply_video_player_fix.py
+apply_video_seeking_fix.py

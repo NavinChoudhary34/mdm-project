@@ -40,6 +40,22 @@ class PlaylistDetailSerializer(PlaylistListSerializer):
         entries = obj.playlist_movies.select_related('movie').prefetch_related('movie__genres').order_by(
             'position', 'added_at'
         )
+
+        # PublicPlaylistDetailView serves this to anonymous strangers via a
+        # shareable link. A movie's own visibility='private' must still be
+        # respected even when it sits inside a public playlist — otherwise a
+        # user's private upload (including its video file) leaks to anyone
+        # with the playlist link. Only PublicPlaylistDetailView sets
+        # 'public_view' in the context (see its get_serializer_context).
+        if self.context.get('public_view'):
+            from django.db.models import Q
+
+            from apps.movies.models import Movie
+
+            entries = entries.filter(
+                Q(movie__owner__isnull=True) | Q(movie__visibility=Movie.VISIBILITY_PUBLIC)
+            )
+
         return PlaylistMovieSerializer(entries, many=True, context=self.context).data
 
 

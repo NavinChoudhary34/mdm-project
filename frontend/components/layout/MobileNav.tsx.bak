@@ -19,6 +19,12 @@ export function MobileNav() {
   const { user, logout } = useAuth();
   const drawerRef = useFocusTrap(isOpen);
 
+  // Pick the longest href that matches the current path, so nested routes
+  // (e.g. /movies/my) don't also mark their parent (/movies) as active.
+  const activeHref = primaryNavItems
+    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setIsOpen(false);
@@ -72,7 +78,7 @@ export function MobileNav() {
 
             <nav aria-label="Primary" className="flex flex-1 flex-col gap-1 overflow-y-auto px-3">
               {primaryNavItems.map((item) => {
-                const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const isActive = item.href === activeHref;
                 const Icon = item.icon;
                 return (
                   <Link
@@ -94,12 +100,13 @@ export function MobileNav() {
               })}
             </nav>
 
-            <div className="px-3 pb-6">
+            <div className="px-3 pb-4">
               <div className="sprocket-rail mb-3" />
+
               <Link
                 href="/settings"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground-muted hover:bg-surface-raised hover:text-foreground"
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-raised hover:text-foreground"
               >
                 <UserIcon size={18} strokeWidth={2} />
                 <span className="truncate">{user?.username ?? 'Profile'}</span>
@@ -107,7 +114,7 @@ export function MobileNav() {
               <Link
                 href="/settings"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground-muted hover:bg-surface-raised hover:text-foreground"
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-raised hover:text-foreground"
               >
                 <Settings size={18} strokeWidth={2} />
                 Settings
@@ -117,7 +124,7 @@ export function MobileNav() {
                   setIsOpen(false);
                   logout();
                 }}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground-muted hover:bg-danger/10 hover:text-danger"
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground-muted transition-colors hover:bg-danger/10 hover:text-danger"
               >
                 <LogOut size={18} strokeWidth={2} />
                 Logout

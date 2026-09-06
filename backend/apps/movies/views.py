@@ -56,22 +56,26 @@ class MovieListCreateView(generics.ListCreateAPIView):
             'genres',
         )
 
+        from django.db.models import Q
+
         # Anonymous users can only see:
         # 1. Catalog/TMDB movies (owner is NULL)
         # 2. Public user-uploaded movies
+        #
+        # .distinct() matters here just like in the authenticated branch
+        # below: a movie could in principle match both conditions (e.g. a
+        # catalog movie whose visibility is set to 'public'), and without it
+        # such a movie would be returned twice by the OR'd filter.
         if not user.is_authenticated:
             return qs.filter(
-                owner__isnull=True
-            ) | qs.filter(
-                visibility=Movie.VISIBILITY_PUBLIC
-            )
+                Q(owner__isnull=True)
+                | Q(visibility=Movie.VISIBILITY_PUBLIC)
+            ).distinct()
 
         # Authenticated users can see:
         # 1. Catalog/TMDB movies
         # 2. Their own movies, including private
         # 3. Other users' public movies
-        from django.db.models import Q
-
         return qs.filter(
             Q(owner__isnull=True)
             | Q(owner=user)

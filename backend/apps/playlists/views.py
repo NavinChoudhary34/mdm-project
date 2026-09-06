@@ -78,6 +78,13 @@ class PublicPlaylistDetailView(generics.RetrieveAPIView):
     serializer_class = PlaylistDetailSerializer
     queryset = Playlist.objects.filter(is_public=True)
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        # Tells PlaylistDetailSerializer.get_movies() to hide any private
+        # movies that happen to be inside this otherwise-public playlist.
+        context['public_view'] = True
+        return context
+
 
 class PlaylistMoviesView(APIView):
     """
@@ -102,16 +109,23 @@ class PlaylistMoviesView(APIView):
         serializer.is_valid(raise_exception=True)
         movie = get_object_or_404(Movie, pk=serializer.validated_data['movie_id'])
 
-        next_position = (playlist.playlist_movies.count())
         try:
             with transaction.atomic():
+                # Lock the playlist row so two concurrent "add movie" requests
+                # can't both read the same count and collide on position.
+                Playlist.objects.select_for_update().get(pk=playlist.pk)
+                next_position = playlist.playlist_movies.count()
                 entry = PlaylistMovie.objects.create(playlist=playlist, movie=movie, position=next_position)
         except IntegrityError:
             return Response(
                 {'detail': 'This movie is already in the playlist.'},
                 status=status.HTTP_409_CONFLICT,
             )
-        playlist.save(update_fields=[])  # bump updated_at via auto_now
+        # NOTE: update_fields=[] is a no-op in Django (an empty-but-not-None
+        # list makes save() return immediately without touching the DB), so
+        # this must NOT pass update_fields at all in order to bump updated_at
+        # via auto_now.
+        playlist.save()
         return Response(
             PlaylistMovieSerializer(entry, context={'request': request}).data,
             status=status.HTTP_201_CREATED,
