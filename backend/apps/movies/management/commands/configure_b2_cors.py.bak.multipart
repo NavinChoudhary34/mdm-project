@@ -58,9 +58,6 @@ class Command(BaseCommand):
                     'AllowedOrigins': [frontend_url],
                     'AllowedMethods': ['PUT', 'GET', 'HEAD'],
                     'AllowedHeaders': ['*'],
-                    # Multipart completion needs the browser to read the
-                    # ETag returned by each uploaded part.
-                    'ExposeHeaders': ['ETag'],
                     'MaxAgeSeconds': 3600,
                 },
             ],

@@ -7,10 +7,8 @@ import { moviesApi } from '@/lib/endpoints';
 import { ApiRequestError } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { uploadVideoMultipart } from '@/lib/multipartUpload';
 
 const PRESIGN_TIMEOUT_MS = 15_000;
-const MULTIPART_THRESHOLD_BYTES = 20 * 1024 * 1024;
 // If no upload progress event has fired within this long after the PUT
 // starts, something is stuck (a hung connection, a CORS block that never
 // resolved, etc.) - fail loudly instead of spinning forever.
@@ -162,47 +160,30 @@ export default function AddMoviePage() {
       let videoFileKey: string | null = null;
 
       try {
+        setStatusText('Requesting upload URL...');
+        log('requesting presigned upload URL...');
+
+        const { upload_url, key } = await withTimeout(
+          moviesApi.presignVideoUpload(videoFile.name, videoFile.type),
+          PRESIGN_TIMEOUT_MS,
+          'Requesting an upload URL'
+        );
+
+        log('got presigned URL, key:', key);
+        setStatusText('Uploading video directly to storage...');
         setUploadProgress(0);
 
-        if (videoFile.size > MULTIPART_THRESHOLD_BYTES) {
-          // Large movies use B2/S3 multipart upload. Each part is a separate
-          // direct browser->B2 request, so a network interruption only forces
-          // the failed part to retry instead of restarting the entire movie.
-          setStatusText('Starting multipart video upload...');
-          log('using multipart upload for', videoFile.size, 'bytes');
-
-          videoFileKey = await uploadVideoMultipart(
-            videoFile,
-            (percent) => setUploadProgress(percent)
-          );
-
-          log('multipart upload to storage complete, key:', videoFileKey);
-        } else {
-          // Small files can use the simpler single PUT path.
-          setStatusText('Requesting upload URL...');
-          log('requesting presigned upload URL...');
-
-          const { upload_url, key } = await withTimeout(
-            moviesApi.presignVideoUpload(videoFile.name, videoFile.type),
-            PRESIGN_TIMEOUT_MS,
-            'Requesting an upload URL'
-          );
-
-          log('got presigned URL, key:', key);
-          setStatusText('Uploading video directly to storage...');
-
-          await uploadFileDirect(upload_url, videoFile, setUploadProgress);
-          videoFileKey = key;
-          log('direct upload to storage complete');
-        }
-      } catch (uploadErr) {
-        if (uploadErr instanceof ApiRequestError && uploadErr.status === 501) {
+        await uploadFileDirect(upload_url, videoFile, setUploadProgress);
+        videoFileKey = key;
+        log('direct upload to storage complete');
+      } catch (presignErr) {
+        if (presignErr instanceof ApiRequestError && presignErr.status === 501) {
           // Expected in local dev - storage backend doesn't support direct
-          // upload here, so fall through to Django's normal multipart path.
-          log('direct/multipart upload not supported in this environment (501) - falling back to upload-through-server');
+          // upload here, so fall through to the normal path below.
+          log('direct upload not supported in this environment (501) - falling back to upload-through-server');
         } else {
-          log('direct/multipart upload path failed:', uploadErr);
-          throw uploadErr;
+          log('direct upload path failed:', presignErr);
+          throw presignErr;
         }
       } finally {
         setUploadProgress(null);

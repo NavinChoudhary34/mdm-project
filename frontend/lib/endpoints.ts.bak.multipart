@@ -76,38 +76,6 @@ export const moviesApi = {
       '/movies/presign-video-upload/',
       { filename, content_type: contentType }
     ),
-
-  initiateMultipartVideoUpload: (filename: string, contentType: string) =>
-    api.post<{ upload_id: string; key: string }>(
-      '/movies/multipart/initiate/',
-      { filename, content_type: contentType }
-    ),
-
-  presignMultipartPart: (key: string, uploadId: string, partNumber: number) =>
-    api.post<{ upload_url: string }>(
-      '/movies/multipart/presign-part/',
-      {
-        key,
-        upload_id: uploadId,
-        part_number: partNumber,
-      }
-    ),
-
-  completeMultipartVideoUpload: (
-    key: string,
-    uploadId: string,
-    parts: Array<{ part_number: number; etag: string }>,
-  ) =>
-    api.post<{ key: string }>(
-      '/movies/multipart/complete/',
-      { key, upload_id: uploadId, parts }
-    ),
-
-  abortMultipartVideoUpload: (key: string, uploadId: string) =>
-    api.post<void>(
-      '/movies/multipart/abort/',
-      { key, upload_id: uploadId }
-    ),
 };
 
 // --- Playlists ---

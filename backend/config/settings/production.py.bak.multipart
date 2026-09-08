@@ -4,9 +4,6 @@ from .base import *  # noqa: F401,F403
 
 DEBUG = False
 
-# Frontend origin used by the B2 bucket CORS management command.
-FRONTEND_URL = config('FRONTEND_URL', default='')
-
 # --- HTTPS / cookie hardening ---
 SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
 SESSION_COOKIE_SECURE = True
