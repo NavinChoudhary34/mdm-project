@@ -7,15 +7,18 @@ Without this, B2 silently rejects the browser's direct PUT upload -
 which is why a presigned-upload attempt can look like it "just hangs"
 in the browser with no clear error, rather than failing obviously.
 
-Run this once after setting up the bucket (or again any time the
-frontend's URL changes):
+Safe to run repeatedly and safe to leave permanently in your deploy's
+build command - it never fails the build. If storage isn't configured
+(local dev) or FRONTEND_URL isn't set yet, it prints a warning and exits
+successfully instead of blocking the whole deploy over what is, at
+worst, a missed CORS update.
 
     python manage.py configure_b2_cors
 """
 
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
@@ -25,22 +28,29 @@ class Command(BaseCommand):
         connection = getattr(default_storage, 'connection', None)
 
         if connection is None:
-            raise CommandError(
-                'No S3-compatible storage is configured (default_storage has '
-                'no .connection). This command only does something useful '
-                'against B2/S3 storage - e.g. run it on Render, not locally.'
+            # Expected in local dev (plain filesystem storage) - not an
+            # error, just nothing to do here.
+            self.stdout.write(
+                'No S3-compatible storage is configured - skipping B2 CORS setup.'
             )
-
-        client = connection.meta.client
-        bucket = default_storage.bucket_name
+            return
 
         frontend_url = getattr(settings, 'FRONTEND_URL', None)
 
         if not frontend_url:
-            raise CommandError(
-                'FRONTEND_URL is not set - cannot determine which origin to '
-                'allow. Set it in your environment variables first.'
-            )
+            # Don't fail the whole deploy over a missing CORS update - warn
+            # loudly instead, so it's visible in the build log but doesn't
+            # block everything else from shipping.
+            self.stderr.write(self.style.WARNING(
+                'FRONTEND_URL is not set - skipping B2 CORS configuration. '
+                'Direct video uploads from the browser will not work until '
+                'FRONTEND_URL is set and this command runs again (it is safe '
+                'to leave in your build command permanently).'
+            ))
+            return
+
+        client = connection.meta.client
+        bucket = default_storage.bucket_name
 
         cors_configuration = {
             'CORSRules': [
@@ -53,7 +63,15 @@ class Command(BaseCommand):
             ],
         }
 
-        client.put_bucket_cors(Bucket=bucket, CORSConfiguration=cors_configuration)
+        try:
+            client.put_bucket_cors(Bucket=bucket, CORSConfiguration=cors_configuration)
+        except Exception as exc:
+            # Same reasoning: a storage-side hiccup here shouldn't take the
+            # whole deploy down with it.
+            self.stderr.write(self.style.WARNING(
+                f'Could not configure B2 CORS (deploy will continue): {exc}'
+            ))
+            return
 
         self.stdout.write(self.style.SUCCESS(
             f'CORS configured on bucket {bucket!r} - '
