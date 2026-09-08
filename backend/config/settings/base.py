@@ -164,7 +164,20 @@ SIMPLE_JWT = {
 }
 
 # --- CORS ---
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000', cast=Csv())
+# CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000', cast=Csv())
+# CORS_ALLOW_CREDENTIALS = True
+# --- CORS ---
+FRONTEND_URL = config(
+    'FRONTEND_URL',
+    default='http://localhost:3000'
+)
+
+CORS_ALLOWED_ORIGINS = config(
+    'CORS_ALLOWED_ORIGINS',
+    default=FRONTEND_URL,
+    cast=Csv()
+)
+
 CORS_ALLOW_CREDENTIALS = True
 
 # --- drf-spectacular (OpenAPI/Swagger docs) ---
