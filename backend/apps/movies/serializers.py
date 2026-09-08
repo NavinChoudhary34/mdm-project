@@ -264,6 +264,15 @@ class MovieWriteSerializer(serializers.ModelSerializer):
         allow_null=True
     )
 
+    # Set instead of video_file when the browser has already uploaded the
+    # video straight to B2 via a presigned URL (see presign.py) - avoids
+    # sending the file through Django at all for large movie files.
+    video_file_key = serializers.CharField(
+        required=False,
+        allow_null=True,
+        write_only=True,
+    )
+
     poster_image = serializers.ImageField(
         required=False,
         allow_null=True
@@ -291,6 +300,7 @@ class MovieWriteSerializer(serializers.ModelSerializer):
 
             # Uploaded video
             'video_file',
+            'video_file_key',
 
             # Private/public
             'visibility',
@@ -303,3 +313,34 @@ class MovieWriteSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id',
         ]
+
+    def validate(self, attrs):
+        # Uploading through Django (video_file) and uploading directly to
+        # B2 first (video_file_key) are mutually exclusive - never both.
+        if attrs.get('video_file') and attrs.get('video_file_key'):
+            raise serializers.ValidationError(
+                'Provide either video_file or video_file_key, not both.'
+            )
+        return attrs
+
+    def create(self, validated_data):
+        video_file_key = validated_data.pop('video_file_key', None)
+        movie = super().create(validated_data)
+
+        if video_file_key:
+            # The file already exists in storage (the browser PUT it there
+            # directly) - just point this movie's field at it, no upload.
+            movie.video_file.name = video_file_key
+            movie.save(update_fields=['video_file'])
+
+        return movie
+
+    def update(self, instance, validated_data):
+        video_file_key = validated_data.pop('video_file_key', None)
+        movie = super().update(instance, validated_data)
+
+        if video_file_key:
+            movie.video_file.name = video_file_key
+            movie.save(update_fields=['video_file'])
+
+        return movie

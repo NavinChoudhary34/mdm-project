@@ -1,14 +1,18 @@
 from django.urls import path
 
-from .presign import PresignVideoUploadView
 from .views import GenreListView, MovieDetailView, MovieListCreateView, MyMoviesView
+from .presign import PresignVideoUploadView
 
 app_name = 'movies'
 
 urlpatterns = [
     path('', MovieListCreateView.as_view(), name='movie-list'),
+    path(
+        'presign/',
+        PresignVideoUploadView.as_view(),
+        name='movie-presign'
+    ),
     path('genres/', GenreListView.as_view(), name='genre-list'),
     path('my/', MyMoviesView.as_view(), name='my-movies'),
-    path('presign-video-upload/', PresignVideoUploadView.as_view(), name='presign-video-upload'),
     path('<int:pk>/', MovieDetailView.as_view(), name='movie-detail'),
 ]

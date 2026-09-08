@@ -62,6 +62,15 @@ export const moviesApi = {
 
   genres: () => api.get<Genre[]>('/movies/genres/'),
 
+  presignVideoUpload: (filename: string, content_type?: string) =>
+    api.post<{
+      upload_url: string;
+      key: string;
+    }>('/movies/presign/', {
+      filename,
+      content_type: content_type || 'application/octet-stream',
+    }),
+
   create: (data: FormData) =>
     api.post<Movie>('/movies/', data),
 
@@ -70,12 +79,6 @@ export const moviesApi = {
 
   remove: (id: number) =>
     api.delete<void>(`/movies/${id}/`),
-
-  presignVideoUpload: (filename: string, contentType: string) =>
-    api.post<{ upload_url: string; key: string }>(
-      '/movies/presign-video-upload/',
-      { filename, content_type: contentType }
-    ),
 };
 
 // --- Playlists ---
