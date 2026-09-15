@@ -155,17 +155,44 @@ class DashboardView(APIView):
         favorites_qs = Favorite.objects.filter(user=user).select_related('movie')
         watchlist_qs = WatchlistEntry.objects.filter(user=user).select_related('movie')
 
-        # "Total movies" = distinct movies the user has touched in any way (playlists,
-        # watched, watchlist, or favorites) — matches the dashboard's intent of a
-        # personal library size, not the whole catalog.
+        # "Total movies" is the user's personal movie library.
+        #
+        # This must include movies the user uploaded themselves. Previously the
+        # dashboard only counted movies that had been added to a playlist,
+        # watchlist, favorites, or watched list. A newly uploaded movie therefore
+        # existed in /api/movies/my/ but did not change the Dashboard count until
+        # the user performed one of those other actions.
+        #
+        # Keep the IDs in a set because the same movie can appear in several
+        # library relations.
         movie_ids = set()
+
+        # Movies uploaded/owned by the current user.
         movie_ids.update(
-            Movie.objects.filter(playlist_entries__playlist__user=user).values_list('id', flat=True)
+            Movie.objects.filter(owner=user).values_list('id', flat=True)
+        )
+
+        # Movies the user has added to their other library areas.
+        movie_ids.update(
+            Movie.objects.filter(
+                playlist_entries__playlist__user=user
+            ).values_list('id', flat=True)
         )
         movie_ids.update(watchlist_qs.values_list('movie_id', flat=True))
         movie_ids.update(favorites_qs.values_list('movie_id', flat=True))
-        movie_ids.update(WatchedEntry.objects.filter(user=user).values_list('movie_id', flat=True))
+        movie_ids.update(
+            WatchedEntry.objects.filter(user=user).values_list(
+                'movie_id',
+                flat=True
+            )
+        )
+
         total_movies = len(movie_ids)
+
+        # A separate count is useful to the frontend if it wants to display
+        # "My Movies" specifically. It is intentionally not required by the
+        # existing DashboardData type, so the current UI remains compatible.
+        my_movies_count = Movie.objects.filter(owner=user).count()
 
         recent_favorites = favorites_qs.order_by('-created_at')[:5]
         recent_watched = WatchedEntry.objects.filter(user=user).select_related('movie').order_by('-watched_at')[:5]

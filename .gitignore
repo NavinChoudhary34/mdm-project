@@ -32,3 +32,9 @@ apply_poster_video_changes.py
 apply_video_player_changes.py
 apply_video_player_fix.py
 apply_video_seeking_fix.py
+
+# --- Temporary patch / backup files ---
+*_patch.py
+*.bak
+*.bak.*
+*.backup
