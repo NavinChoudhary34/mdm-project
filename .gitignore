@@ -38,3 +38,6 @@ apply_video_seeking_fix.py
 *.bak
 *.bak.*
 *.backup
+# Temporary patch / fix scripts
+apply*.py
+fix*.py
