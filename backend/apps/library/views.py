@@ -189,10 +189,6 @@ class DashboardView(APIView):
 
         total_movies = len(movie_ids)
 
-        # A separate count is useful to the frontend if it wants to display
-        # "My Movies" specifically. It is intentionally not required by the
-        # existing DashboardData type, so the current UI remains compatible.
-        my_movies_count = Movie.objects.filter(owner=user).count()
 
         recent_favorites = favorites_qs.order_by('-created_at')[:5]
         recent_watched = WatchedEntry.objects.filter(user=user).select_related('movie').order_by('-watched_at')[:5]
