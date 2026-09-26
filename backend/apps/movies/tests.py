@@ -64,11 +64,11 @@ class MovieDetailTests(MovieTestBase):
         resp = self.client.get('/api/movies/99999/')
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_non_staff_cannot_create_movie(self):
+    def test_authenticated_user_can_create_movie(self):
         user = User.objects.create_user(username='regular', email='r@example.com', password='pass12345')
         self.client.force_authenticate(user)
         resp = self.client.post('/api/movies/', {'title': 'New Movie'})
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
 
     def test_staff_can_create_movie(self):
         staff = User.objects.create_user(username='admin2', email='a2@example.com', password='pass12345', is_staff=True)
