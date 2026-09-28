@@ -215,7 +215,7 @@ export default function DashboardPage() {
         {data.recent_favorites.length === 0 ? (
           <div className="rounded-xl border border-border bg-surface p-6 text-center">
             <p className="text-sm text-foreground-muted">
-              You haven't added any favorites yet.
+              You haven&apos;t added any favorites yet.
             </p>
 
             <Link
@@ -248,7 +248,7 @@ export default function DashboardPage() {
             </h2>
 
             <p className="mt-1 text-sm text-foreground-muted">
-              Movies you've recently watched.
+              Movies you&apos;ve recently watched.
             </p>
           </div>
 
@@ -263,7 +263,7 @@ export default function DashboardPage() {
         {data.recently_watched.length === 0 ? (
           <div className="rounded-xl border border-border bg-surface p-6 text-center">
             <p className="text-sm text-foreground-muted">
-              You haven't watched any movies yet.
+              You haven&apos;t watched any movies yet.
             </p>
 
             <Link
@@ -311,7 +311,7 @@ export default function DashboardPage() {
         {data.recently_updated_playlists.length === 0 ? (
           <div className="rounded-xl border border-border bg-surface p-6 text-center">
             <p className="text-sm text-foreground-muted">
-              You haven't created any playlists yet.
+              You haven&apos;t created any playlists yet.
             </p>
 
             <Link

@@ -38,6 +38,7 @@ LOCAL_APPS = [
     'apps.movies',
     'apps.playlists',
     'apps.library',
+    'apps.dsa',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

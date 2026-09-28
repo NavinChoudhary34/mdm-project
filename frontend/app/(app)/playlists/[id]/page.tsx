@@ -5,9 +5,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft, ArrowUp, ArrowDown, CheckCircle2, GripVertical, Lock, Globe, Pencil, Trash2, X, Check,
+  ArrowLeft, ArrowUp, ArrowDown, CheckCircle2, GripVertical, Lock, Globe, Pencil, Trash2, X, Check, RotateCcw,
 } from 'lucide-react';
-import { playlistsApi } from '@/lib/endpoints';
+import { dsaApi, playlistsApi } from '@/lib/endpoints';
 import type { Playlist, PlaylistMovieEntry } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
@@ -85,6 +85,11 @@ export default function PlaylistDetailPage({ params }: { params: Promise<{ id: s
       setPlaylist({ ...playlist, is_public: !next });
       showToast(getErrorMessage(err), 'error');
     }
+  }
+
+  async function undoLastChange() {
+    try { const result = await dsaApi.undoLastPlaylistAction(); showToast(result.detail, 'success'); load(); }
+    catch (err) { showToast(getErrorMessage(err), 'error'); }
   }
 
   async function handleDelete() {
@@ -215,6 +220,7 @@ export default function PlaylistDetailPage({ params }: { params: Promise<{ id: s
         )}
 
         <div className="flex shrink-0 gap-2">
+          <Button variant="secondary" size="sm" onClick={undoLastChange}><RotateCcw size={14} /> Undo</Button>
           <Button variant="secondary" size="sm" onClick={togglePrivacy}>
             {playlist.is_public ? <Globe size={14} /> : <Lock size={14} />}
             {playlist.is_public ? 'Public' : 'Private'}

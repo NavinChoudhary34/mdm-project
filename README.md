@@ -172,3 +172,10 @@ Before deploying:
 - Set `CORS_ALLOWED_ORIGINS` and `ALLOWED_HOSTS` to your real production domains
 - Build the frontend with `npm run build` and serve it with `npm run start` or deploy to a platform like Vercel
 - Point `NEXT_PUBLIC_API_URL` at your production API URL
+
+## DSA Features
+
+- **Trie:** movie-title prefix autocomplete.
+- **Doubly linked list:** persistent Recently Viewed history with a 10-movie window.
+- **Stack:** LIFO undo for playlist mutations.
+- **Max heap / priority queue:** Top Rated movie extraction.

@@ -14,6 +14,7 @@ urlpatterns = [
     path('api/playlists/', include('apps.playlists.urls')),
     path('api/public/playlists/', include((playlists_urls.public_urlpatterns, 'playlists'), namespace='public-playlists')),
     path('api/', include('apps.library.urls')),
+    path('api/dsa/', include('apps.dsa.urls')),
 
     # OpenAPI schema + Swagger UI (see section 37 of the spec).
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

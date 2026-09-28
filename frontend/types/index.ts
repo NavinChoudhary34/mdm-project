@@ -135,6 +135,9 @@ export interface DashboardData {
   recently_updated_playlists: { id: number; name: string; updated_at: string }[];
 }
 
+export interface DsaAutocompleteItem { id: number; title: string; }
+export interface DsaUndoResult { detail: string; playlist_id: number; action_type: string; }
+
 export interface ApiError {
   detail?: string;
   [field: string]: unknown;

@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { getErrorMessage } from '@/lib/utils';
 
-import type { Movie, Paginated } from '@/types';
+import type { Movie } from '@/types';
 
 export default function MyMoviesPage() {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -38,7 +38,9 @@ export default function MyMoviesPage() {
     }
   }
 
+  // This effect intentionally starts the initial asynchronous data load.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadMovies();
   }, []);
 
@@ -112,7 +114,7 @@ export default function MyMoviesPage() {
           </h2>
 
           <p className="mx-auto mt-2 max-w-md text-sm text-foreground-muted">
-            You haven't uploaded any movies yet. Add your first movie to
+            You haven&apos;t uploaded any movies yet. Add your first movie to
             start building your personal library.
           </p>
 

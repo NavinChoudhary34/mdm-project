@@ -6,6 +6,8 @@ from apps.library.models import Favorite, WatchedEntry, WatchlistEntry
 from .filters import MovieFilter
 from .models import Movie
 from .permissions import MoviePermission
+from apps.dsa.services import record_recent_view
+
 from .serializers import (
     MovieDetailSerializer,
     MovieListSerializer,
@@ -292,6 +294,12 @@ class MovieDetailView(generics.RetrieveUpdateDestroyAPIView):
             )
 
         return context
+
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        if request.user.is_authenticated:
+            record_recent_view(request.user, self.get_object())
+        return response
 
     def update(self, request, *args, **kwargs):
         response = super().update(

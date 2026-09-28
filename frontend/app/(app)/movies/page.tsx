@@ -41,10 +41,14 @@ export default function MoviesPage() {
     setPage(1);
   }
 
+  // This effect intentionally resets loading/error state before an async request.
   useEffect(() => {
     let cancelled = false;
 
+    // These resets intentionally happen before the request starts.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setError(null);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMovies(null);
 
     moviesApi

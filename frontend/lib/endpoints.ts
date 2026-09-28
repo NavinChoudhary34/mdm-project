@@ -11,6 +11,8 @@ import type {
   User,
   WatchedEntry,
   WatchlistEntry,
+  DsaAutocompleteItem,
+  DsaUndoResult,
 } from '@/types';
 
 // --- Auth ---
@@ -108,6 +110,14 @@ export const moviesApi = {
       '/movies/multipart/abort/',
       { key, upload_id: uploadId }
     ),
+};
+
+// --- DSA ---
+export const dsaApi = {
+  autocomplete: (query: string) => api.get<DsaAutocompleteItem[]>(`/dsa/autocomplete/?q=${encodeURIComponent(query)}`),
+  topRated: (limit = 10) => api.get<Movie[]>(`/dsa/top-rated/?limit=${limit}`),
+  recentlyViewed: () => api.get<Movie[]>('/dsa/recently-viewed/'),
+  undoLastPlaylistAction: () => api.post<DsaUndoResult>('/dsa/undo/'),
 };
 
 // --- Playlists ---

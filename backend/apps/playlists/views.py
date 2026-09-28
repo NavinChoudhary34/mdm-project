@@ -9,6 +9,8 @@ from apps.movies.models import Movie
 
 from .models import Playlist, PlaylistMovie
 from .permissions import IsPlaylistOwner
+from apps.dsa.services import push_undo_action
+
 from .serializers import (
     AddMovieToPlaylistSerializer,
     PlaylistDetailSerializer,
@@ -126,6 +128,7 @@ class PlaylistMoviesView(APIView):
         # this must NOT pass update_fields at all in order to bump updated_at
         # via auto_now.
         playlist.save()
+        push_undo_action(request.user, playlist, 'add', {'movie_id': movie.id})
         return Response(
             PlaylistMovieSerializer(entry, context={'request': request}).data,
             status=status.HTTP_201_CREATED,
@@ -146,14 +149,20 @@ class PlaylistMovieDetailView(APIView):
 
     def patch(self, request, pk, movie_id):
         entry = self.get_entry(request, pk, movie_id)
+        previous = {'movie_id': entry.movie_id, 'watched': entry.watched, 'notes': entry.notes}
         serializer = PlaylistMovieUpdateSerializer(entry, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        push_undo_action(request.user, entry.playlist, 'update_entry', previous)
         return Response(PlaylistMovieSerializer(entry, context={'request': request}).data)
 
     def delete(self, request, pk, movie_id):
         entry = self.get_entry(request, pk, movie_id)
+        payload = {'movie_id': entry.movie_id, 'position': entry.position, 'watched': entry.watched, 'notes': entry.notes}
+        playlist = entry.playlist
         entry.delete()
+        playlist.save()
+        push_undo_action(request.user, playlist, 'remove', payload)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -171,9 +180,11 @@ class PlaylistReorderView(APIView):
         if set(movie_ids) != set(entries.keys()):
             raise ValidationError('movie_ids must exactly match the movies currently in this playlist.')
 
+        previous_order = sorted(entries.values(), key=lambda entry: (entry.position, entry.added_at))
+        previous_ids = [entry.movie_id for entry in previous_order]
         with transaction.atomic():
             for position, movie_id in enumerate(movie_ids):
                 entries[movie_id].position = position
             PlaylistMovie.objects.bulk_update(entries.values(), ['position'])
-
+        push_undo_action(request.user, playlist, 'reorder', {'movie_ids': previous_ids})
         return Response(PlaylistDetailSerializer(playlist, context={'request': request}).data)

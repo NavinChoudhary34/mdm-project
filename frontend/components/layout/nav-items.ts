@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   ListVideo,
   ListChecks,
+  Network,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -38,6 +39,7 @@ export const primaryNavItems: NavItem[] = [
     href: '/playlists',
     icon: ListVideo,
   },
+  { label: 'DSA Lab', href: '/dsa', icon: Network },
   {
     label: 'Watchlist',
     href: '/watchlist',
