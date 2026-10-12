@@ -16,7 +16,7 @@ export function Sidebar() {
   const { user, logout } = useAuth();
 
   return (
-    <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-border lg:bg-surface">
+    <aside className="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:shrink-0 lg:self-start lg:flex-col lg:overflow-y-auto lg:border-r lg:border-border lg:bg-surface">
       <div className="flex h-16 items-center gap-2 px-6">
         <span className="font-display text-lg font-medium tracking-tight text-foreground">
           Movie Manager

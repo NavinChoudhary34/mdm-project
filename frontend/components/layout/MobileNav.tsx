@@ -27,7 +27,7 @@ export function MobileNav() {
   }, [isOpen]);
 
   return (
-    <div className="lg:hidden">
+    <div className="sticky top-0 z-40 lg:hidden">
       <div className="flex h-14 items-center justify-between border-b border-border bg-surface px-4">
         <span className="font-display text-base font-medium tracking-tight text-foreground">
           Movie Manager
