@@ -88,7 +88,7 @@ export default function PlaylistDetailPage({ params }: { params: Promise<{ id: s
   }
 
   async function undoLastChange() {
-    try { const result = await dsaApi.undoLastPlaylistAction(); showToast(result.detail, 'success'); load(); }
+    try { const result = await dsaApi.undoLastPlaylistAction(playlistId); showToast(result.detail, 'success'); load(); }
     catch (err) { showToast(getErrorMessage(err), 'error'); }
   }
 

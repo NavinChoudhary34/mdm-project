@@ -23,6 +23,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ['username', 'email', 'password', 'password_confirm']
 
     def validate_username(self, value):
+        if '@' in value:
+            raise serializers.ValidationError('Usernames cannot contain "@".')
         if User.objects.filter(username__iexact=value).exists():
             raise serializers.ValidationError('A user with that username already exists.')
         return value

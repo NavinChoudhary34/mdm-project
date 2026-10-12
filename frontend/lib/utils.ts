@@ -6,7 +6,10 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatYear(dateStr: string | null): string {
   if (!dateStr) return '—';
-  return new Date(dateStr).getFullYear().toString();
+  // Date-only strings are parsed as UTC, which shifts Jan 1 releases back a year in
+  // timezones west of UTC. Take the year directly from the string when possible.
+  const match = /^(\d{4})-/.exec(dateStr);
+  return match ? match[1] : new Date(dateStr).getFullYear().toString();
 }
 
 export function formatRuntime(minutes: number | null): string {

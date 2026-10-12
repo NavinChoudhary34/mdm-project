@@ -3,6 +3,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.dsa.services import visible_movies_for_user
 from apps.movies.models import Movie
 from apps.movies.serializers import MovieListSerializer
 from apps.playlists.models import Playlist
@@ -41,7 +42,7 @@ class FavoriteListCreateView(_ToggleRelationMixin, generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         serializer = MovieIdSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        movie = get_object_or_404(Movie, pk=serializer.validated_data['movie_id'])
+        movie = get_object_or_404(visible_movies_for_user(request.user), pk=serializer.validated_data['movie_id'])
         favorite, created = Favorite.objects.get_or_create(user=request.user, movie=movie)
         return Response(
             FavoriteSerializer(favorite).data,
@@ -66,7 +67,7 @@ class WatchlistListCreateView(_ToggleRelationMixin, generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         serializer = MovieIdSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        movie = get_object_or_404(Movie, pk=serializer.validated_data['movie_id'])
+        movie = get_object_or_404(visible_movies_for_user(request.user), pk=serializer.validated_data['movie_id'])
         entry, created = WatchlistEntry.objects.get_or_create(user=request.user, movie=movie)
         return Response(
             WatchlistEntrySerializer(entry).data,
@@ -91,7 +92,7 @@ class WatchedListCreateView(_ToggleRelationMixin, generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         serializer = MovieIdSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        movie = get_object_or_404(Movie, pk=serializer.validated_data['movie_id'])
+        movie = get_object_or_404(visible_movies_for_user(request.user), pk=serializer.validated_data['movie_id'])
         entry, created = WatchedEntry.objects.get_or_create(user=request.user, movie=movie)
         return Response(
             WatchedEntrySerializer(entry).data,
@@ -128,7 +129,7 @@ class RatingDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def put(self, request, movie_id):
-        movie = get_object_or_404(Movie, pk=movie_id)
+        movie = get_object_or_404(visible_movies_for_user(request.user), pk=movie_id)
         serializer = RatingWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         rating, _created = Rating.objects.update_or_create(

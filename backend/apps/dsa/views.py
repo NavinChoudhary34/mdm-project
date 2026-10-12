@@ -15,11 +15,13 @@ class MovieAutocompleteView(APIView):
         query = request.query_params.get('q','').strip()
         if len(query) < 2:
             return Response([])
-        movies = visible_movies_for_user(request.user).only('id','title').order_by('title')[:1000]
-        trie = MovieTitleTrie(); by_id = {}
-        for movie in movies:
-            trie.insert(movie.title, movie.id); by_id[movie.id] = movie
-        return Response([{'id':i,'title':by_id[i].title} for i in trie.autocomplete(query,8)])
+        # values_list() avoids the FieldError that .only() raised when combined with the
+        # select_related() inside visible_movies_for_user().
+        rows = visible_movies_for_user(request.user).order_by('title').values_list('id', 'title')[:1000]
+        trie = MovieTitleTrie(); titles = {}
+        for movie_id, movie_title in rows:
+            trie.insert(movie_title, movie_id); titles[movie_id] = movie_title
+        return Response([{'id': i, 'title': titles[i]} for i in trie.autocomplete(query, 8)])
 
 class TopRatedMoviesView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -50,7 +52,12 @@ class RecentlyViewedView(APIView):
 class UndoPlaylistActionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     def post(self, request):
-        action=undo_last_playlist_action(request.user)
+        raw = request.data.get('playlist_id')
+        try:
+            playlist_id = int(raw) if raw not in (None, '') else None
+        except (TypeError, ValueError):
+            return Response({'detail': 'playlist_id must be a number.'}, status=status.HTTP_400_BAD_REQUEST)
+        action=undo_last_playlist_action(request.user, playlist_id)
         if action is None:
             return Response({'detail':'There is no playlist change to undo.'},status=status.HTTP_404_NOT_FOUND)
         return Response({'detail':'Last playlist change undone.','playlist_id':action.playlist_id,'action_type':action.action_type})

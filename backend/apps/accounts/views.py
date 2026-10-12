@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -5,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
 from .serializers import (
     ChangePasswordSerializer,
@@ -142,13 +145,17 @@ class PasswordResetRequestView(APIView):
             token = default_token_generator.make_token(user)
             reset_url = f"{getattr(django_settings, 'FRONTEND_URL', 'http://localhost:3000')}/reset-password?uid={uid}&token={token}"
             # In development this goes to the console email backend (see settings).
-            send_mail(
-                subject='Reset your Movie Playlist Manager password',
-                message=f'Use this link to reset your password: {reset_url}',
-                from_email=None,
-                recipient_list=[user.email],
-                fail_silently=True,
-            )
+            try:
+                send_mail(
+                    subject='Reset your Movie Playlist Manager password',
+                    message=f'Use this link to reset your password: {reset_url}',
+                    from_email=None,
+                    recipient_list=[user.email],
+                )
+            except Exception:
+                # Still answer with the generic 200 (don't reveal which emails exist),
+                # but leave a trace so a broken mail setup is noticed.
+                logging.getLogger(__name__).exception('Password reset e-mail failed')
         return Response({'detail': 'If that email exists, a reset link has been sent.'})
 
 
@@ -173,4 +180,8 @@ class PasswordResetConfirmView(APIView):
 
         user.set_password(data['new_password'])
         user.save(update_fields=['password'])
+        # A reset usually means the account may be compromised: revoke every refresh token
+        # issued before it so old sessions can't keep minting access tokens.
+        for outstanding in OutstandingToken.objects.filter(user=user):
+            BlacklistedToken.objects.get_or_create(token=outstanding)
         return Response(status=status.HTTP_204_NO_CONTENT)

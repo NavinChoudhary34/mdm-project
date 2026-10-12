@@ -1,12 +1,13 @@
 from django.db.models import Prefetch
 from rest_framework import generics, permissions
+from rest_framework.response import Response
 
 from apps.library.models import Favorite, WatchedEntry, WatchlistEntry
 
 from .filters import MovieFilter
 from .models import Movie
 from .permissions import MoviePermission
-from apps.dsa.services import record_recent_view
+from apps.dsa.services import record_recent_view, visible_movies_for_user
 
 from .serializers import (
     MovieDetailSerializer,
@@ -245,11 +246,9 @@ class MovieDetailView(generics.RetrieveUpdateDestroyAPIView):
     ]
 
     def get_queryset(self):
-        return Movie.objects.select_related(
-            'owner',
-            'director',
-        ).prefetch_related(
-            'genres',
+        # Only movies this user is allowed to see: catalog movies, public uploads and
+        # the user's own uploads. Someone else's private movie now returns 404.
+        return visible_movies_for_user(self.request.user).prefetch_related(
             Prefetch('cast_members')
         )
 
@@ -296,10 +295,10 @@ class MovieDetailView(generics.RetrieveUpdateDestroyAPIView):
         return context
 
     def retrieve(self, request, *args, **kwargs):
-        response = super().retrieve(request, *args, **kwargs)
+        instance = self.get_object()  # single lookup (was fetched twice before)
         if request.user.is_authenticated:
-            record_recent_view(request.user, self.get_object())
-        return response
+            record_recent_view(request.user, instance)
+        return Response(self.get_serializer(instance).data)
 
     def update(self, request, *args, **kwargs):
         response = super().update(

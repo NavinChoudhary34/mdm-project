@@ -1,4 +1,5 @@
 from django.db import IntegrityError, transaction
+from django.db.models import Max
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import ValidationError
@@ -9,7 +10,7 @@ from apps.movies.models import Movie
 
 from .models import Playlist, PlaylistMovie
 from .permissions import IsPlaylistOwner
-from apps.dsa.services import push_undo_action
+from apps.dsa.services import push_undo_action, visible_movies_for_user
 
 from .serializers import (
     AddMovieToPlaylistSerializer,
@@ -109,14 +110,17 @@ class PlaylistMoviesView(APIView):
         playlist = self.get_playlist(request, pk)
         serializer = AddMovieToPlaylistSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        movie = get_object_or_404(Movie, pk=serializer.validated_data['movie_id'])
+        movie = get_object_or_404(visible_movies_for_user(request.user), pk=serializer.validated_data['movie_id'])
 
         try:
             with transaction.atomic():
                 # Lock the playlist row so two concurrent "add movie" requests
                 # can't both read the same count and collide on position.
                 Playlist.objects.select_for_update().get(pk=playlist.pk)
-                next_position = playlist.playlist_movies.count()
+                # count() collides with existing positions once movies have been removed
+                # (gaps), which put the new movie in the middle. Use max + 1 instead.
+                highest = playlist.playlist_movies.aggregate(m=Max('position'))['m']
+                next_position = 0 if highest is None else highest + 1
                 entry = PlaylistMovie.objects.create(playlist=playlist, movie=movie, position=next_position)
         except IntegrityError:
             return Response(

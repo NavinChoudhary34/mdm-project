@@ -21,11 +21,19 @@ def record_recent_view(user, movie):
     ordered = dll.values()
     now = timezone.now()
     with transaction.atomic():
+        # Lock this user's row so two simultaneous page loads (e.g. React dev double
+        # fetch) can't both delete/insert and trip the unique constraint.
+        type(user).objects.select_for_update().get(pk=user.pk)
         RecentlyViewed.objects.filter(user=user).delete()
-        RecentlyViewed.objects.bulk_create([
-            RecentlyViewed(user=user, movie_id=movie_id, viewed_at=now-timezone.timedelta(seconds=i))
-            for i, movie_id in enumerate(ordered)
+        rows = RecentlyViewed.objects.bulk_create([
+            RecentlyViewed(user=user, movie_id=movie_id) for movie_id in ordered
         ])
+        # viewed_at is auto_now, so bulk_create ignores any value passed in and every row
+        # got "now", which scrambled the order. bulk_update does not touch auto_now fields,
+        # so use it to stamp the intended order (most recent = newest timestamp).
+        for i, row in enumerate(rows):
+            row.viewed_at = now - timezone.timedelta(seconds=i)
+        RecentlyViewed.objects.bulk_update(rows, ['viewed_at'])
 
 def push_undo_action(user, playlist, action_type, payload):
     PlaylistUndoAction.objects.create(user=user, playlist=playlist, action_type=action_type, payload=payload)
@@ -33,8 +41,13 @@ def push_undo_action(user, playlist, action_type, payload):
     if old:
         PlaylistUndoAction.objects.filter(id__in=old).delete()
 
-def undo_last_playlist_action(user):
-    actions = list(PlaylistUndoAction.objects.filter(user=user).select_related('playlist').order_by('-created_at','-id')[:UNDO_STACK_LIMIT])
+def undo_last_playlist_action(user, playlist_id=None):
+    # playlist_id (optional) limits undo to one playlist, so pressing Undo on playlist A
+    # can no longer silently change playlist B.
+    qs = PlaylistUndoAction.objects.filter(user=user)
+    if playlist_id is not None:
+        qs = qs.filter(playlist_id=playlist_id)
+    actions = list(qs.select_related('playlist').order_by('-created_at','-id')[:UNDO_STACK_LIMIT])
     stack = Stack()
     for action in reversed(actions):
         stack.push(action)

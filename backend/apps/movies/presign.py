@@ -36,9 +36,17 @@ def get_s3_client_and_bucket():
     return client, bucket
 
 
-def make_video_key(filename):
+def user_key_prefix(user):
+    """Every user uploads under their own folder, so keys can be tied to an owner."""
+    return f'movies/videos/{user.id}/'
+
+
+def make_video_key(filename, user):
+    # Keep only a short, alphanumeric extension so odd filenames can't shape the key.
     ext = os.path.splitext(filename or 'video')[1]
-    return f'movies/videos/{uuid.uuid4().hex}{ext}'
+    if not (ext[1:].isalnum() and len(ext) <= 11):
+        ext = ''
+    return f'{user_key_prefix(user)}{uuid.uuid4().hex}{ext}'
 
 
 class PresignVideoUploadView(APIView):
@@ -56,7 +64,7 @@ class PresignVideoUploadView(APIView):
 
         filename = request.data.get('filename') or 'video'
         content_type = request.data.get('content_type') or 'application/octet-stream'
-        key = make_video_key(filename)
+        key = make_video_key(filename, request.user)
 
         try:
             upload_url = client.generate_presigned_url(
@@ -94,7 +102,7 @@ class InitiateMultipartVideoUploadView(APIView):
 
         filename = request.data.get('filename') or 'video'
         content_type = request.data.get('content_type') or 'application/octet-stream'
-        key = make_video_key(filename)
+        key = make_video_key(filename, request.user)
 
         try:
             result = client.create_multipart_upload(
@@ -148,7 +156,7 @@ class PresignMultipartPartView(APIView):
         except (TypeError, ValueError):
             part_number = 0
 
-        if not key.startswith('movies/videos/') or not upload_id:
+        if not key.startswith(user_key_prefix(request.user)) or not upload_id:
             return Response(
                 {'detail': 'Invalid multipart upload.'},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -204,7 +212,7 @@ class CompleteMultipartVideoUploadView(APIView):
         upload_id = str(request.data.get('upload_id') or '')
         raw_parts = request.data.get('parts')
 
-        if not key.startswith('movies/videos/') or not upload_id:
+        if not key.startswith(user_key_prefix(request.user)) or not upload_id:
             return Response(
                 {'detail': 'Invalid multipart upload.'},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -290,7 +298,7 @@ class AbortMultipartVideoUploadView(APIView):
         key = str(request.data.get('key') or '')
         upload_id = str(request.data.get('upload_id') or '')
 
-        if not key.startswith('movies/videos/') or not upload_id:
+        if not key.startswith(user_key_prefix(request.user)) or not upload_id:
             return Response(
                 {'detail': 'Invalid multipart upload.'},
                 status=status.HTTP_400_BAD_REQUEST,

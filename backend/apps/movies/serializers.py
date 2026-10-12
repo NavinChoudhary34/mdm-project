@@ -1,3 +1,5 @@
+import re
+
 from rest_framework import serializers
 
 from .models import Genre, Movie, MovieCastMember, Person
@@ -284,6 +286,17 @@ class MovieWriteSerializer(serializers.ModelSerializer):
         default=Movie.VISIBILITY_PRIVATE
     )
 
+    # Without bounds the DB column allowed up to 99.9, letting an uploader
+    # dominate the Top Rated list. Keep it on the same 0-10 scale as the catalog.
+    rating = serializers.DecimalField(
+        max_digits=3,
+        decimal_places=1,
+        min_value=0,
+        max_value=10,
+        required=False,
+        allow_null=True,
+    )
+
     class Meta:
         model = Movie
 
@@ -313,6 +326,19 @@ class MovieWriteSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id',
         ]
+
+    def validate_video_file_key(self, value):
+        # Previously any string was accepted, so a user could point their movie at
+        # another user's video (or any object in the bucket) and receive a signed URL.
+        if value in (None, ''):
+            return value
+        request = self.context.get('request')
+        prefix = f'movies/videos/{request.user.id}/' if request else None
+        if not prefix or not re.fullmatch(
+            re.escape(prefix) + r'[0-9a-f]{32}(\.[A-Za-z0-9]{1,10})?', value
+        ):
+            raise serializers.ValidationError('Invalid video upload key.')
+        return value
 
     def validate(self, attrs):
         # Uploading through Django (video_file) and uploading directly to
