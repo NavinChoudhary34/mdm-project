@@ -20,7 +20,7 @@ export default function DsaPage() {
   useEffect(() => { Promise.all([dsaApi.topRated(), dsaApi.recentlyViewed()]).then(([a,b]) => { setTopRated(a); setRecent(b); }).catch(e => setError(getErrorMessage(e))); }, []);
   // Autocomplete is synchronized from the query state and intentionally updates suggestions.
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { const q=query.trim(); if(q.length<2){setSuggestions([]);return;} const t=setTimeout(()=>dsaApi.autocomplete(q).then(setSuggestions).catch(()=>setSuggestions([])),150); return ()=>clearTimeout(t); },[query]);
+  useEffect(() => { const q=query.trim(); if(q.length<2){setSuggestions([]);return;} let stale=false; const t=setTimeout(()=>dsaApi.autocomplete(q).then(r=>{if(!stale)setSuggestions(r);}).catch(()=>{if(!stale)setSuggestions([]);}),150); return ()=>{stale=true;clearTimeout(t);}; },[query]);
   async function undo(){try{showToast((await dsaApi.undoLastPlaylistAction()).detail,'success');}catch(e){showToast(getErrorMessage(e),'error');}}
   return <div className="mx-auto max-w-7xl pb-16">
     <h1 className="font-display text-2xl font-medium text-foreground sm:text-3xl">DSA Lab</h1>

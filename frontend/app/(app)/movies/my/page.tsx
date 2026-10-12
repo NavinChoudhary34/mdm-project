@@ -67,7 +67,7 @@ export default function MyMoviesPage() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl pb-16">
+    <div className="mx-auto max-w-6xl pb-16">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-display text-3xl font-medium text-foreground">
@@ -195,6 +195,6 @@ export default function MyMoviesPage() {
           ))}
         </div>
       )}
-    </main>
+    </div>
   );
 }

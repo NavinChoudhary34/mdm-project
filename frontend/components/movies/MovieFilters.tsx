@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import type { Genre } from '@/types';
 import { moviesApi } from '@/lib/endpoints';
@@ -33,6 +33,12 @@ export function MovieFilters({ filters, onChange }: MovieFiltersProps) {
   const [showMore, setShowMore] = useState(false);
   const [searchInput, setSearchInput] = useState(filters.search);
 
+  // Always holds the newest filters, so the debounced search below never applies stale ones.
+  const latestFilters = useRef(filters);
+  useEffect(() => {
+    latestFilters.current = filters;
+  }, [filters]);
+
   useEffect(() => {
     moviesApi.genres().then(setGenres).catch(() => {});
   }, []);
@@ -40,8 +46,8 @@ export function MovieFilters({ filters, onChange }: MovieFiltersProps) {
   // Debounce the free-text search so we don't hit the API on every keystroke.
   useEffect(() => {
     const timeout = setTimeout(() => {
-      if (searchInput !== filters.search) {
-        onChange({ ...filters, search: searchInput });
+      if (searchInput !== latestFilters.current.search) {
+        onChange({ ...latestFilters.current, search: searchInput });
       }
     }, 350);
     return () => clearTimeout(timeout);

@@ -135,3 +135,37 @@ class DsaAndVisibilityRegressionTests(APITestCase):
         self.assertEqual(r.status_code, 204)
         r = self.client.post('/api/auth/refresh/', {'refresh': t['refresh']}, format='json')
         self.assertEqual(r.status_code, 401)
+
+
+class SecondRoundRegressionTests(APITestCase):
+    """Bugs found in the second (frontend-focused) pass."""
+
+    def setUp(self):
+        cache.clear()
+        self.bob = User.objects.create_user('bob', 'b@x.com', 'pw-12345-xyz')
+
+    # Settings page could rename a user to something that looks like another user's e-mail
+    def test_profile_update_rejects_new_username_with_at_sign(self):
+        self.client.force_authenticate(self.bob)
+        r = self.client.patch('/api/auth/me/', {'username': 'someone@else.com'}, format='json')
+        self.assertEqual(r.status_code, 400)
+
+    def test_profile_update_keeps_existing_at_sign_username_working(self):
+        legacy = User.objects.create_user('old@name.com', 'legacy@x.com', 'pw-12345-xyz')
+        self.client.force_authenticate(legacy)
+        r = self.client.patch('/api/auth/me/', {'username': 'old@name.com', 'bio': 'hi'}, format='json')
+        self.assertEqual(r.status_code, 200)
+
+    # Unrated movies must never lead "Highest rated" (PostgreSQL sorts NULL first on DESC)
+    def test_ordering_puts_unrated_movies_last_and_is_stable(self):
+        Movie.objects.create(title='No rating A')
+        for i, rating in enumerate(['6.0', '9.0', '9.0', '7.5']):
+            Movie.objects.create(title=f'R{i}', rating=rating)
+        Movie.objects.create(title='No rating B')
+        r = self.client.get('/api/movies/?ordering=-rating')
+        ratings = [m['rating'] for m in r.data['results']]
+        self.assertEqual(ratings[-2:], [None, None])
+        self.assertEqual(ratings[:4], ['9.0', '9.0', '7.5', '6.0'])
+        r = self.client.get('/api/movies/?ordering=rating')
+        ratings = [m['rating'] for m in r.data['results']]
+        self.assertEqual(ratings[-2:], [None, None])  # nulls last ascending too

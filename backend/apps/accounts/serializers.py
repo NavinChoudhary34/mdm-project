@@ -60,6 +60,10 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         fields = ['username', 'email', 'bio', 'avatar_url']
 
     def validate_username(self, value):
+        # Same rule as registration. An unchanged username is allowed so accounts that
+        # already contain '@' can still save other profile fields.
+        if '@' in value and value != self.instance.username:
+            raise serializers.ValidationError('Usernames cannot contain "@".')
         qs = User.objects.filter(username__iexact=value).exclude(pk=self.instance.pk)
         if qs.exists():
             raise serializers.ValidationError('A user with that username already exists.')

@@ -285,7 +285,7 @@ export default function AddMoviePage() {
   }
 
   return (
-    <main className="min-h-screen bg-background px-4 py-10">
+    <div className="bg-background px-4 py-4">
       <div className="mx-auto max-w-2xl">
         <div className="mb-8">
           <Link
@@ -470,6 +470,6 @@ export default function AddMoviePage() {
           </Button>
         </form>
       </div>
-    </main>
+    </div>
   );
 }

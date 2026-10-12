@@ -3,6 +3,7 @@ import {
   getAccessToken,
   getRefreshToken,
   setAccessToken,
+  setTokens,
 } from './auth';
 
 import type { ApiError } from '@/types';
@@ -64,7 +65,14 @@ async function refreshAccessToken(): Promise<string | null> {
 
         const data = await res.json();
 
-        setAccessToken(data.access);
+        // The backend rotates refresh tokens (ROTATE_REFRESH_TOKENS + blacklist), so the
+        // refresh token we just used is now invalid. Keep the new one, otherwise the next
+        // refresh fails and the user is logged out after about an hour.
+        if (data.refresh) {
+          setTokens(data.access, data.refresh);
+        } else {
+          setAccessToken(data.access);
+        }
 
         return data.access as string;
       })

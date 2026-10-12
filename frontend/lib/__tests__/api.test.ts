@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ApiRequestError, api, buildQuery } from '../api';
-import { clearTokens, setTokens, getAccessToken } from '../auth';
+import { clearTokens, setTokens, getAccessToken, getRefreshToken } from '../auth';
 
 describe('buildQuery', () => {
   it('omits undefined, null, and empty-string values', () => {
@@ -112,7 +112,7 @@ describe('api client', () => {
       .mockResolvedValueOnce(new Response(null, { status: 401 }))
       // Second call: the refresh endpoint succeeds with a new access token.
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ access: 'fresh-token' }), {
+        new Response(JSON.stringify({ access: 'fresh-token', refresh: 'rotated-refresh' }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         })
@@ -131,6 +131,8 @@ describe('api client', () => {
     expect(result).toEqual({ id: 1 });
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(getAccessToken()).toBe('fresh-token');
+    // The backend rotates refresh tokens, so the NEW one must be stored (old one is blacklisted).
+    expect(getRefreshToken()).toBe('rotated-refresh');
     // The retried request should carry the newly refreshed token.
     const retryCall = fetchMock.mock.calls[2];
     expect((retryCall[1].headers as Record<string, string>).Authorization).toBe('Bearer fresh-token');

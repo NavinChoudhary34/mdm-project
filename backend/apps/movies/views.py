@@ -4,7 +4,10 @@ from rest_framework.response import Response
 
 from apps.library.models import Favorite, WatchedEntry, WatchlistEntry
 
-from .filters import MovieFilter
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
+
+from .filters import MovieFilter, NullsLastOrderingFilter
 from .models import Movie
 from .permissions import MoviePermission
 from apps.dsa.services import record_recent_view, visible_movies_for_user
@@ -30,6 +33,9 @@ class MovieListCreateView(generics.ListCreateAPIView):
     """
 
     permission_classes = [MoviePermission]
+
+    # Same backends as the project default, but with the NULLs-last ordering filter.
+    filter_backends = [DjangoFilterBackend, SearchFilter, NullsLastOrderingFilter]
 
     filterset_class = MovieFilter
 

@@ -50,6 +50,8 @@ export function VideoPlayer({ src, poster, className }: VideoPlayerProps) {
   const [isMuted, setIsMuted] = useState(false);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubTime, setScrubTime] = useState(0);
+  // True when the browser can't load/play the file (expired link, unsupported format like MKV).
+  const [hasError, setHasError] = useState(false);
 
   // Wire up native video events -> React state.
   useEffect(() => {
@@ -172,9 +174,21 @@ export function VideoPlayer({ src, poster, className }: VideoPlayerProps) {
         poster={poster || undefined}
         className="aspect-video w-full"
         onClick={togglePlay}
+        onError={() => setHasError(true)}
+        onLoadedData={() => setHasError(false)}
       >
         Your browser doesn&apos;t support video playback.
       </video>
+
+      {hasError && (
+        <div
+          role="alert"
+          className="absolute inset-0 flex items-center justify-center bg-black/80 p-6 text-center text-sm text-white"
+        >
+          This video can&apos;t be played. The link may have expired (refresh the page) or the
+          format isn&apos;t supported by your browser (MP4/H.264 and WebM work best).
+        </div>
+      )}
 
       {/* Center play/pause overlay, shown when paused */}
       {!isPlaying && (
