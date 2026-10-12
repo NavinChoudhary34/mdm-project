@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Search, SlidersHorizontal } from 'lucide-react';
-import type { Genre } from '@/types';
-import { moviesApi } from '@/lib/endpoints';
+import type { DsaAutocompleteItem, Genre } from '@/types';
+import { dsaApi, moviesApi } from '@/lib/endpoints';
 import { cn } from '@/lib/utils';
 
 export interface MovieFilterState {
@@ -32,6 +34,28 @@ export function MovieFilters({ filters, onChange }: MovieFiltersProps) {
   const [genres, setGenres] = useState<Genre[]>([]);
   const [showMore, setShowMore] = useState(false);
   const [searchInput, setSearchInput] = useState(filters.search);
+  const router = useRouter();
+
+  // --- Title autocomplete (served by the backend trie) ---
+  // Suggestions are stored together with the text they were fetched for. While the next request is
+  // loading we keep showing the previous results (so the list doesn't flicker on every keystroke),
+  // but only when the typed text is a refinement of what was fetched ("in" -> "inc" or back).
+  // Unrelated text hides them, and no state has to be reset inside an effect.
+  const [suggestionState, setSuggestionState] = useState<{ query: string; items: DsaAutocompleteItem[] }>({
+    query: '',
+    items: [],
+  });
+  const [isSuggestOpen, setIsSuggestOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+
+  const trimmedInput = searchInput.trim();
+  const typed = trimmedInput.toLowerCase();
+  const fetched = suggestionState.query.toLowerCase();
+  const isRelated = fetched !== '' && (typed.startsWith(fetched) || fetched.startsWith(typed));
+  const suggestions = isRelated ? suggestionState.items : [];
+  const showSuggestions = isSuggestOpen && trimmedInput.length >= 2 && suggestions.length > 0;
+  // The list can change length while an item is highlighted, so never point past its end.
+  const highlighted = activeIndex < suggestions.length ? activeIndex : -1;
 
   // Always holds the newest filters, so the debounced search below never applies stale ones.
   const latestFilters = useRef(filters);
@@ -54,6 +78,44 @@ export function MovieFilters({ filters, onChange }: MovieFiltersProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
 
+  // Fetch suggestions shortly after typing stops (needs at least 2 characters).
+  useEffect(() => {
+    if (trimmedInput.length < 2) return;
+    let stale = false;
+    const timeout = setTimeout(() => {
+      dsaApi
+        .autocomplete(trimmedInput)
+        .then((items) => {
+          if (!stale) setSuggestionState({ query: trimmedInput, items });
+        })
+        .catch(() => {
+          // Suggestions are a convenience: if they fail, normal search still works.
+        });
+    }, 150);
+    return () => {
+      stale = true;
+      clearTimeout(timeout);
+    };
+  }, [trimmedInput]);
+
+  // Keyboard support: arrows move through the suggestions, Enter opens the highlighted movie,
+  // Escape closes the list. Enter with nothing highlighted just continues the normal search.
+  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!showSuggestions) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((i) => (i + 1) % suggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
+    } else if (e.key === 'Enter' && highlighted >= 0) {
+      e.preventDefault();
+      router.push(`/movies/${suggestions[highlighted].id}`);
+    } else if (e.key === 'Escape') {
+      setIsSuggestOpen(false);
+    }
+  }
+
   function update(patch: Partial<MovieFilterState>) {
     onChange({ ...filters, ...patch });
   }
@@ -65,10 +127,47 @@ export function MovieFilters({ filters, onChange }: MovieFiltersProps) {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-muted" />
           <input
             value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
+            onChange={(e) => {
+              setSearchInput(e.target.value);
+              setIsSuggestOpen(true);
+              setActiveIndex(-1);
+            }}
+            onFocus={() => setIsSuggestOpen(true)}
+            onBlur={() => setIsSuggestOpen(false)}
+            onKeyDown={handleSearchKeyDown}
             placeholder="Search movies, directors, actors…"
+            role="combobox"
+            aria-expanded={showSuggestions}
+            aria-controls="movie-search-suggestions"
+            aria-autocomplete="list"
+            aria-activedescendant={highlighted >= 0 ? `movie-suggestion-${suggestions[highlighted].id}` : undefined}
             className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-accent/40"
           />
+
+          {showSuggestions && (
+            // onMouseDown preventDefault keeps focus in the input, otherwise the blur handler
+            // would close the list before a click on a suggestion registers.
+            <ul
+              id="movie-search-suggestions"
+              role="listbox"
+              onMouseDown={(e) => e.preventDefault()}
+              className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg border border-border bg-surface shadow-lg"
+            >
+              {suggestions.map((s, i) => (
+                <li key={s.id} id={`movie-suggestion-${s.id}`} role="option" aria-selected={i === highlighted}>
+                  <Link
+                    href={`/movies/${s.id}`}
+                    className={cn(
+                      'block px-3 py-2 text-sm text-foreground hover:bg-surface-raised',
+                      i === highlighted && 'bg-surface-raised'
+                    )}
+                  >
+                    {s.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <select
           value={filters.ordering}

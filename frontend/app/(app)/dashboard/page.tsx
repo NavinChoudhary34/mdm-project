@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-import { libraryApi } from '@/lib/endpoints';
+import { dsaApi, libraryApi } from '@/lib/endpoints';
 import { ApiRequestError } from '@/lib/api';
-import type { DashboardData } from '@/types';
+import type { DashboardData, Movie } from '@/types';
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -32,6 +32,26 @@ export default function DashboardPage() {
     }
 
     loadDashboard();
+  }, []);
+
+  // Recently viewed (linked list) and top rated (max heap) are loaded separately from the main
+  // dashboard call, so a failure here never hides the rest of the page. null = still loading.
+  const [recentlyViewed, setRecentlyViewed] = useState<Movie[] | null>(null);
+  const [topRated, setTopRated] = useState<Movie[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    dsaApi
+      .recentlyViewed()
+      .then((movies) => !cancelled && setRecentlyViewed(movies))
+      .catch(() => !cancelled && setRecentlyViewed([]));
+    dsaApi
+      .topRated(4)
+      .then((movies) => !cancelled && setTopRated(movies))
+      .catch(() => !cancelled && setTopRated([]));
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {
@@ -147,6 +167,15 @@ export default function DashboardPage() {
           />
         </div>
       </section>
+
+      {/* Continue browsing: movies you opened most recently */}
+      <MovieRowSection
+        title="Continue Browsing"
+        subtitle="Movies you looked at recently."
+        movies={recentlyViewed}
+        emptyText="Movies you open will show up here."
+        action={{ href: '/movies', label: 'Browse movies' }}
+      />
 
       {/* Watchlist */}
       <section className="mt-10">
@@ -287,6 +316,15 @@ export default function DashboardPage() {
         )}
       </section>
 
+      {/* Highest rated movies you can see */}
+      <MovieRowSection
+        title="Top Rated"
+        subtitle="The highest-rated movies in the library."
+        movies={topRated}
+        emptyText="No rated movies yet."
+        action={{ href: '/movies', label: 'Browse movies' }}
+      />
+
       {/* Recently updated playlists */}
       <section className="mt-10 pb-10">
         <div className="mb-4 flex items-center justify-between">
@@ -405,5 +443,56 @@ function MovieCard({
         </h3>
       </div>
     </Link>
+  );
+}
+
+/**
+ * A titled row of up to 4 movie cards with loading and empty states.
+ * movies === null means "still loading".
+ */
+function MovieRowSection({
+  title,
+  subtitle,
+  movies,
+  emptyText,
+  action,
+}: {
+  title: string;
+  subtitle: string;
+  movies: Movie[] | null;
+  emptyText: string;
+  action: { href: string; label: string };
+}) {
+  return (
+    <section className="mt-10">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h2 className="font-display text-xl font-medium text-foreground">{title}</h2>
+          <p className="mt-1 text-sm text-foreground-muted">{subtitle}</p>
+        </div>
+      </div>
+
+      {movies === null ? (
+        // Loading placeholders
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="aspect-[2/3] animate-pulse rounded-xl border border-border bg-surface" />
+          ))}
+        </div>
+      ) : movies.length === 0 ? (
+        <div className="rounded-xl border border-border bg-surface p-6 text-center">
+          <p className="text-sm text-foreground-muted">{emptyText}</p>
+          <Link href={action.href} className="mt-3 inline-block text-sm text-accent hover:underline">
+            {action.label}
+          </Link>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {movies.slice(0, 4).map((movie) => (
+            <MovieCard key={movie.id} id={movie.id} title={movie.title} posterUrl={movie.poster_url} />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
