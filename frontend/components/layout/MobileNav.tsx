@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogOut, Menu, Settings, User as UserIcon, X } from 'lucide-react';
-import { primaryNavItems } from './nav-items';
+import { isNavItemActive, primaryNavItems } from './nav-items';
 import { useAuth } from '@/hooks/useAuth';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { cn } from '@/lib/utils';
@@ -72,7 +72,7 @@ export function MobileNav() {
 
             <nav aria-label="Primary" className="flex flex-1 flex-col gap-1 overflow-y-auto px-3">
               {primaryNavItems.map((item) => {
-                const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const isActive = isNavItemActive(pathname, item.href);
                 const Icon = item.icon;
                 return (
                   <Link

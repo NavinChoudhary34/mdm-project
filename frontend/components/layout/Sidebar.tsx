@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogOut, Settings, User as UserIcon } from 'lucide-react';
-import { primaryNavItems } from './nav-items';
+import { isNavItemActive, primaryNavItems } from './nav-items';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
@@ -25,7 +25,7 @@ export function Sidebar() {
 
       <nav aria-label="Primary" className="flex flex-1 flex-col gap-1 px-3">
         {primaryNavItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const isActive = isNavItemActive(pathname, item.href);
           const Icon = item.icon;
           return (
             <Link

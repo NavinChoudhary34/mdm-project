@@ -56,3 +56,16 @@ export const primaryNavItems: NavItem[] = [
     icon: Heart,
   },
 ];
+
+/**
+ * Whether a nav item should be highlighted for the current URL path.
+ *
+ * A plain "starts with" check highlighted both "Movies" (/movies) and "My Movies"
+ * (/movies/my) on /movies/my. Here an item is active only if no OTHER nav item with a
+ * longer (more specific) href also matches the path.
+ */
+export function isNavItemActive(pathname: string, href: string): boolean {
+  const matches = (h: string) => pathname === h || pathname.startsWith(`${h}/`);
+  if (!matches(href)) return false;
+  return !primaryNavItems.some((other) => other.href.length > href.length && matches(other.href));
+}
